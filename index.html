@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather App</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(135deg,#74ebd5,#ACB6E5);
+}
+
+.card{
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    width:400px;
+    text-align:center;
+    box-shadow:0 4px 15px rgba(0,0,0,0.2);
+}
+
+h1{
+    margin-bottom:20px;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin-bottom:15px;
+    border:1px solid #ccc;
+    border-radius:5px;
+    font-size:16px;
+}
+
+button{
+    background:#007bff;
+    color:white;
+    border:none;
+    padding:12px 25px;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+button:hover{
+    background:#0056b3;
+}
+
+#result{
+    margin-top:25px;
+    text-align:left;
+    font-size:18px;
+}
+
+.weather-info p{
+    margin:12px 0;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+    <h1>🌤 Weather App</h1>
+
+    <input
+        type="text"
+        id="city"
+        placeholder="Enter City Name">
+
+    <button onclick="getWeather()">
+        Get Weather
+    </button>
+
+    <div id="result"></div>
+
+</div>
+
+<script>
+
+async function getWeather() {
+
+    const city = document.getElementById("city").value.trim();
+    const result = document.getElementById("result");
+
+    if(city === ""){
+        result.innerHTML =
+        "<p>Please enter a city name.</p>";
+        return;
+    }
+
+    try {
+
+        result.innerHTML =
+        "<p>Loading weather data...</p>";
+
+        // Get Latitude & Longitude from City Name
+        const geoResponse = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`
+        );
+
+        const geoData = await geoResponse.json();
+
+        if(!geoData.results){
+            throw new Error("City not found");
+        }
+
+        const latitude =
+        geoData.results[0].latitude;
+
+        const longitude =
+        geoData.results[0].longitude;
+
+        const cityName =
+        geoData.results[0].name;
+
+        // Get Weather Data
+        const weatherResponse = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code`
+        );
+
+        const weatherData =
+        await weatherResponse.json();
+
+        const weatherCode =
+        weatherData.current.weather_code;
+
+        let condition = "Clear Sky";
+
+        if(weatherCode >= 1 && weatherCode <= 3){
+            condition = "Partly Cloudy";
+        }
+        else if(weatherCode >= 45 && weatherCode <= 48){
+            condition = "Fog";
+        }
+        else if(weatherCode >= 51 && weatherCode <= 67){
+            condition = "Rain";
+        }
+        else if(weatherCode >= 71 && weatherCode <= 77){
+            condition = "Snow";
+        }
+        else if(weatherCode >= 80){
+            condition = "Heavy Rain";
+        }
+
+        result.innerHTML = `
+        <div class="weather-info">
+
+            <h2>${cityName}</h2>
+
+            <p>
+            🌡 <strong>Temperature:</strong>
+            ${weatherData.current.temperature_2m} °C
+            </p>
+
+            <p>
+            💧 <strong>Humidity:</strong>
+            ${weatherData.current.relative_humidity_2m}%
+            </p>
+
+            <p>
+            ☁ <strong>Condition:</strong>
+            ${condition}
+            </p>
+
+        </div>
+        `;
+
+    }
+    catch(error){
+
+        result.innerHTML =
+        `<p style="color:red;">${error.message}</p>`;
+    }
+}
+
+</script>
+
+</body>
+</html>
